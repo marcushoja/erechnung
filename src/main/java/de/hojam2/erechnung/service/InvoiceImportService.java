@@ -5,6 +5,7 @@ import de.hojam2.erechnung.model.ExportFormat;
 import de.hojam2.erechnung.model.InvoiceFormData;
 import de.hojam2.erechnung.model.InvoiceLineItem;
 import de.hojam2.erechnung.model.InvoiceMetaData;
+import de.hojam2.erechnung.model.LineUnit;
 import de.hojam2.erechnung.model.SellerData;
 import de.hojam2.erechnung.model.VatRate;
 import java.io.ByteArrayInputStream;
@@ -146,6 +147,8 @@ public class InvoiceImportService {
             item.setUnitPriceNet(scaleToTwo(defaultBigDecimal(importedItem.getPrice(), BigDecimal.ZERO)));
             BigDecimal vat = importedItem.getProduct() != null ? importedItem.getProduct().getVATPercent() : new BigDecimal("19");
             item.setVatRate(VatRate.fromPercentage(vat));
+            String unitCode = importedItem.getProduct() != null ? importedItem.getProduct().getUnit() : null;
+            item.setUnit(LineUnit.fromCode(unitCode));
             items.add(item);
         }
         return items;
@@ -172,6 +175,7 @@ public class InvoiceImportService {
         item.setUnitPriceNet(BigDecimal.ZERO);
         item.setDescription("");
         item.setVatRate(VatRate.VAT_19);
+        item.setUnit(LineUnit.STUECK);
         return item;
     }
 

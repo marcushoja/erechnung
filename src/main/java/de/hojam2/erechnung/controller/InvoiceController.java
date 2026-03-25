@@ -4,6 +4,7 @@ import de.hojam2.erechnung.model.ExportFormat;
 import de.hojam2.erechnung.model.InvoiceFormData;
 import de.hojam2.erechnung.model.InvoiceLineItem;
 import de.hojam2.erechnung.model.InvoiceTotals;
+import de.hojam2.erechnung.model.LineUnit;
 import de.hojam2.erechnung.model.VatRate;
 import de.hojam2.erechnung.service.InvoiceCalculationService;
 import de.hojam2.erechnung.service.InvoiceExportService;
@@ -50,6 +51,7 @@ public class InvoiceController {
         InvoiceFormData formData = defaultFormData();
         model.addAttribute("invoiceFormData", formData);
         model.addAttribute("vatRates", VatRate.values());
+        model.addAttribute("lineUnits", LineUnit.values());
         model.addAttribute("formats", ExportFormat.values());
         model.addAttribute("totals", calculationService.calculate(formData));
         return "index";
@@ -71,6 +73,7 @@ public class InvoiceController {
 
         model.addAttribute("invoiceFormData", formData);
         model.addAttribute("vatRates", VatRate.values());
+        model.addAttribute("lineUnits", LineUnit.values());
         model.addAttribute("formats", ExportFormat.values());
         model.addAttribute("totals", calculationService.calculate(formData));
         return "index";
@@ -112,6 +115,7 @@ public class InvoiceController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("errorMessage", "Bitte Pflichtfelder prüfen. Export wurde blockiert.");
             model.addAttribute("vatRates", VatRate.values());
+            model.addAttribute("lineUnits", LineUnit.values());
             model.addAttribute("formats", ExportFormat.values());
             model.addAttribute("totals", totals);
             return "index";
@@ -163,6 +167,7 @@ public class InvoiceController {
         firstItem.setQuantity(BigDecimal.ONE);
         firstItem.setUnitPriceNet(new BigDecimal("0.00"));
         firstItem.setVatRate(VatRate.VAT_19);
+        firstItem.setUnit(LineUnit.STUECK);
         firstItem.setDescription("");
         formData.getItems().add(firstItem);
         return formData;

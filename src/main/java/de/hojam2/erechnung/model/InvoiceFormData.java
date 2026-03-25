@@ -8,7 +8,11 @@ import java.util.List;
 
 public class InvoiceFormData {
 
-    public static final String DEFAULT_PAYMENT_INSTRUCTION = "Bitte überweisen Sie den Rechnungsbetrag innerhalb der nächsten 14 Tage auf das unten genannte Konto.";
+    public static final String DEFAULT_PAYMENT_INSTRUCTION = 
+    """
+    Für meine erbrachten Leistungen in Ihrem Studio erlaube ich mir, oben aufgeführte Positionen in Rechnung zu stellen.
+    Ich bitte um Zahlung unter Angabe von Rechnungsnummer und Rechnungsdatum innerhalb von 14 Tagen ab Rechnungsdatum an die angegebene Bankverbindung.
+    Ich danke für die vertrauensvolle Zusammenarbeit.""";
 
     @Valid
     @NotNull

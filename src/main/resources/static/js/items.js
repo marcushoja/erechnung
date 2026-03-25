@@ -161,16 +161,19 @@
 
             const sourceQuantity = sourceRow.querySelector('input[name$=".quantity"]')?.value || "";
             const sourceDescription = sourceRow.querySelector('input[name$=".description"]')?.value || "";
+            const sourceUnit = sourceRow.querySelector('select[name$=".unit"]')?.value || "STUECK";
             const sourceUnitPrice = sourceRow.querySelector('input[name$=".unitPriceNet"]')?.value || "";
             const sourceVat = sourceRow.querySelector('select[name$=".vatRate"]')?.value || "VAT_19";
 
             const quantityInput = newRow.querySelector('input[name$=".quantity"]');
             const descriptionInput = newRow.querySelector('input[name$=".description"]');
+            const unitSelect = newRow.querySelector('select[name$=".unit"]');
             const unitPriceInput = newRow.querySelector('input[name$=".unitPriceNet"]');
             const vatSelect = newRow.querySelector('select[name$=".vatRate"]');
 
             if (quantityInput) quantityInput.value = sourceQuantity;
             if (descriptionInput) descriptionInput.value = sourceDescription;
+            if (unitSelect) unitSelect.value = sourceUnit;
             if (unitPriceInput) unitPriceInput.value = sourceUnitPrice;
             if (vatSelect) vatSelect.value = isSmallBusiness() ? "VAT_0" : sourceVat;
 

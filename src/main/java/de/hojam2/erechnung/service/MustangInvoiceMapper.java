@@ -2,6 +2,7 @@ package de.hojam2.erechnung.service;
 
 import de.hojam2.erechnung.model.InvoiceFormData;
 import de.hojam2.erechnung.model.InvoiceLineItem;
+import de.hojam2.erechnung.model.LineUnit;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZoneId;
@@ -70,7 +71,7 @@ public class MustangInvoiceMapper {
             Product product = new Product()
                 .setName(lineItem.getDescription())
                 .setDescription(lineItem.getDescription())
-                .setUnit("C62")
+                .setUnit(resolveUnitCode(lineItem.getUnit()))
                 .setVATPercent(vatPercent);
 
             Item item = new Item()
@@ -138,5 +139,12 @@ public class MustangInvoiceMapper {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String resolveUnitCode(LineUnit unit) {
+        if (unit == null) {
+            return LineUnit.STUECK.code();
+        }
+        return unit.code();
     }
 }

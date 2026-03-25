@@ -24,6 +24,9 @@ public class InvoiceLineItem {
     @NotNull(message = "Steuersatz ist erforderlich.")
     private VatRate vatRate;
 
+    @NotNull(message = "Einheit ist erforderlich.")
+    private LineUnit unit;
+
     public BigDecimal getQuantity() {
         return quantity;
     }
@@ -54,5 +57,13 @@ public class InvoiceLineItem {
 
     public void setVatRate(VatRate vatRate) {
         this.vatRate = vatRate;
+    }
+
+    public LineUnit getUnit() {
+        return unit;
+    }
+
+    public void setUnit(LineUnit unit) {
+        this.unit = unit;
     }
 }

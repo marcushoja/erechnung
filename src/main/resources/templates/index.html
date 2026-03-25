@@ -121,6 +121,7 @@
                     <thead>
                     <tr>
                         <th>Anzahl *</th>
+                        <th>Einheit *</th>
                         <th>Beschreibung *</th>
                         <th>Einzelpreis (Netto) *</th>
                         <th>Steuersatz *</th>
@@ -130,6 +131,11 @@
                     <tbody id="items-body">
                     <tr th:each="item, iter : *{items}" class="item-row">
                         <td><input type="number" min="0.01" step="0.01" th:field="*{items[__${iter.index}__].quantity}" required></td>
+                        <td>
+                            <select th:field="*{items[__${iter.index}__].unit}" required>
+                                <option th:each="unit : ${lineUnits}" th:value="${unit}" th:text="${unit.label()}"></option>
+                            </select>
+                        </td>
                         <td><input type="text" th:field="*{items[__${iter.index}__].description}" required></td>
                         <td><input type="number" min="0" step="0.01" th:field="*{items[__${iter.index}__].unitPriceNet}" required></td>
                         <td>
@@ -155,7 +161,7 @@
                 </label>
             </div>
 
-            <label>Zahlungshinweis
+            <label>Hinweis
                 <textarea th:field="*{paymentInstructionText}" rows="3"></textarea>
             </label>
 
@@ -196,6 +202,11 @@
 <template id="item-row-template">
     <tr class="item-row">
         <td><input type="number" min="0.01" step="0.01" name="items[__INDEX__].quantity" required></td>
+        <td>
+            <select name="items[__INDEX__].unit" required>
+                <option th:each="unit : ${lineUnits}" th:value="${unit}" th:text="${unit.label()}"></option>
+            </select>
+        </td>
         <td><input type="text" name="items[__INDEX__].description" required></td>
         <td><input type="number" min="0" step="0.01" name="items[__INDEX__].unitPriceNet" required></td>
         <td>

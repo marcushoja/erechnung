@@ -3,186 +3,136 @@
 <head>
     <meta charset="UTF-8" />
     <style>
-        @page { size: A4; margin: 18mm 18mm 16mm 18mm; }
-        body { font-family: Helvetica, sans-serif; color: #111827; font-size: 11pt; }
+        @page { size: A4; margin: 18mm; }
+        body { font-family: Helvetica, sans-serif; color: #0f2138; font-size: 10.5pt; }
         h1, h2, h3, p { margin: 0; }
-        .top { margin-bottom: 8mm; padding-bottom: 34mm; }
-        .brand-row { width: 100%; border-collapse: collapse; margin-bottom: 24mm; }
-        .brand-row td { border: none; vertical-align: bottom; }
-        .brand { font-size: 24pt; font-weight: 700; }
-        .invoice-title { text-align: right; font-size: 22pt; font-weight: 500; }
-        .address-line { font-size: 10pt; color: #374151; margin-bottom: 8mm; }
-        .recipient { font-size: 12pt; line-height: 1.35; margin-bottom: 15mm; }
-        .meta { width: 100%; border-collapse: collapse; margin-bottom: 10mm; }
-        .meta th { border: none; text-align: left; color: #1f2937; font-size: 10pt; padding: 0 6mm 2mm 0; }
-        .meta td { border: none; text-align: left; font-size: 12pt; padding: 0 6mm 0 0; }
-        .lines { width: 100%; border-collapse: collapse; margin-top: 4mm; }
-        .lines th { background: #e5e7eb; font-size: 10pt; text-align: left; padding: 6px 7px; border: none; }
-        .lines td { border: none; border-bottom: 1px solid #e5e7eb; padding: 8px 7px; vertical-align: top; }
-        .num { width: 7%; }
-        .desc { width: 43%; }
-        .qty { width: 12%; text-align: right; }
-        .unit { width: 10%; }
-        .vat { width: 9%; text-align: right; }
-        .price { width: 10%; text-align: right; }
-        .sum { width: 12%; text-align: right; }
-        .desc-sub { display: block; color: #6b7280; margin-top: 2px; }
-        .totals-box { margin-top: 7mm; border-top: 1px solid #d1d5db; padding-top: 4mm; width: 44%; margin-left: auto; }
-        .totals-box table { width: 100%; border-collapse: collapse; }
-        .totals-box td { border: none; padding: 1.2mm 0; font-size: 11pt; }
-        .totals-box .label { text-align: left; }
-        .totals-box .value { text-align: right; }
-        .totals-box .grand td { padding-top: 3mm; font-size: 14pt; font-weight: 700; }
-        .notes { margin-top: 12mm; font-size: 12pt; line-height: 1.35; }
-        .notes p { margin-bottom: 4mm; white-space: pre-line; }
-        .footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: -12mm;
-            height: 26mm;
-            border-top: 1px solid #d1d5db;
-            padding: 4mm 18mm 2mm 18mm;
-            font-size: 9pt;
-            color: #111827;
-        }
-        .footer-grid {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 12mm 0;
-        }
-        .footer-grid td {
-            border: none;
-            width: 33%;
-            vertical-align: top;
-            padding: 0;
-        }
-        .footer-page {
-            position: absolute;
-            right: 18mm;
-            bottom: 0;
-            text-align: right;
-            white-space: nowrap;
-        }
-        .muted { color: #4b5563; }
+        .header { width: 100%; border-collapse: collapse; margin-bottom: 16mm; }
+        .header td { border: none; vertical-align: top; width: 50%; }
+        .sender { line-height: 1.35; font-size: 10pt; margin-bottom: 18mm; }
+        .recipient { line-height: 1.35; }
+        .recipient .name { font-weight: 700; margin-bottom: 1mm; }
+        .title { text-align: right; font-size: 24pt; font-weight: 700; margin-bottom: 4mm; }
+        .meta-box { margin-left: auto; width: 88%; background: #edf1f6; padding: 5mm 5mm 4mm 5mm; }
+        .meta-box table { width: 100%; border-collapse: collapse; }
+        .meta-box td { border: none; padding: 1.5mm 0; }
+        .meta-box td:first-child { font-weight: 700; width: 54%; }
+
+        .line-table { width: 100%; border-collapse: collapse; margin-top: 5mm; }
+        .line-table th { text-align: left; font-size: 10pt; padding: 3mm 2mm; border-bottom: 1px solid #cfd8e4; }
+        .line-table td { padding: 3mm 2mm; border-bottom: 1px solid #dce3ec; vertical-align: top; }
+        .line-table .qty, .line-table .price, .line-table .sum { text-align: right; white-space: nowrap; }
+
+        .totals { margin-top: 7mm; width: 38%; margin-left: auto; }
+        .totals table { width: 100%; border-collapse: collapse; }
+        .totals td { border: none; padding: 1.4mm 0; }
+        .totals td:first-child { text-align: left; }
+        .totals td:last-child { text-align: right; white-space: nowrap; }
+        .totals .gross td { font-size: 11.5pt; font-weight: 700; padding-top: 3mm; }
+
+        .section { margin-top: 12mm; }
+        .section h3 { font-size: 14pt; margin-bottom: 2mm; }
+        .section p { line-height: 1.4; white-space: pre-line; }
     </style>
 </head>
 <body>
-<div class="top">
-    <table class="brand-row">
+<table class="header">
+    <tr>
+        <td>
+            <div class="sender">
+                <p th:text="${invoice.seller.name}"></p>
+                <p th:text="${invoice.seller.street}"></p>
+                <p th:text="${invoice.seller.zip + ' ' + invoice.seller.city}"></p>
+                <p th:text="${'Steuernummer: ' + invoice.seller.taxNumber}"></p>
+                <p th:if="${invoice.seller.email != null and !invoice.seller.email.isBlank()}" th:text="${invoice.seller.email}"></p>
+                <p th:if="${invoice.seller.phone != null and !invoice.seller.phone.isBlank()}" th:text="${invoice.seller.phone}"></p>
+            </div>
+
+            <div class="recipient">
+                <p class="name" th:text="${invoice.buyer.name}"></p>
+                <p th:text="${invoice.buyer.street}"></p>
+                <p th:text="${invoice.buyer.zip + ' ' + invoice.buyer.city}"></p>
+                <p th:if="${invoice.buyer.vatId != null and !invoice.buyer.vatId.isBlank()}" th:text="${'USt-IdNr.: ' + invoice.buyer.vatId}"></p>
+            </div>
+        </td>
+        <td>
+            <h1 class="title">Rechnung</h1>
+
+            <div class="meta-box">
+                <table>
+                    <tr>
+                        <td>Rechnungsnummer</td>
+                        <td th:text="${invoice.meta.invoiceNumber}"></td>
+                    </tr>
+                    <tr>
+                        <td>Datum</td>
+                        <td th:text="${#temporals.format(invoice.meta.invoiceDate, 'dd.MM.yyyy')}"></td>
+                    </tr>
+                    <tr>
+                        <td>Fälligkeitsdatum</td>
+                        <td th:text="${#temporals.format(dueDate, 'dd.MM.yyyy')}"></td>
+                    </tr>
+                    <tr>
+                        <td>Rechnungszeitraum</td>
+                        <td>
+                            <span th:if="${invoice.meta.servicePeriodStart != null and invoice.meta.servicePeriodEnd != null}"
+                                  th:text="${#temporals.format(invoice.meta.servicePeriodStart, 'dd.MM.yyyy') + ' - ' + #temporals.format(invoice.meta.servicePeriodEnd, 'dd.MM.yyyy')}"></span>
+                            <span th:if="${invoice.meta.servicePeriodStart == null or invoice.meta.servicePeriodEnd == null}"
+                                  th:text="${#temporals.format(invoice.meta.serviceDate, 'dd.MM.yyyy')}"></span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="line-table">
+    <thead>
+    <tr>
+        <th>Produkt oder Dienstleistung</th>
+        <th class="qty">Menge</th>
+        <th class="price">Einzelpreis</th>
+        <th class="sum">Gesamtbetrag</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${invoice.items}">
+        <td th:text="${item.description}"></td>
+        <td class="qty" th:text="${#numbers.formatDecimal(item.quantity, 1, 2) + ' ' + item.unit.label()}"></td>
+        <td class="price" th:text="${#numbers.formatDecimal(item.unitPriceNet, 1, 2) + ' EUR'}"></td>
+        <td class="sum" th:text="${#numbers.formatDecimal(item.quantity * item.unitPriceNet, 1, 2) + ' EUR'}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="totals">
+    <table>
         <tr>
-            <td class="brand" th:text="${invoice.seller.name}"></td>
-            <td class="invoice-title">Rechnung</td>
+            <td>Zwischensumme</td>
+            <td th:text="${#numbers.formatDecimal(totals.netTotal, 1, 2) + ' EUR'}"></td>
+        </tr>
+        <tr th:if="${!invoice.smallBusinessRegulation}" th:each="tax : ${totals.taxSummaries}">
+            <td th:text="${'USt ' + #numbers.formatDecimal(tax.taxRate, 1, 2) + '%'}"></td>
+            <td th:text="${#numbers.formatDecimal(tax.taxAmount, 1, 2) + ' EUR'}"></td>
+        </tr>
+        <tr class="gross">
+            <td th:text="${invoice.smallBusinessRegulation ? 'Gesamtbetrag' : 'Gesamtbetrag (Brutto)'}"></td>
+            <td th:text="${#numbers.formatDecimal(totals.grossTotal, 1, 2) + ' EUR'}"></td>
         </tr>
     </table>
-
-    <p class="address-line">
-        <strong th:text="${invoice.seller.name}"></strong>
-        <span> | </span>
-        <span th:text="${invoice.seller.street}"></span>
-        <span> | </span>
-        <span th:text="${invoice.seller.zip + ' ' + invoice.seller.city}"></span>
-    </p>
-
-    <p class="recipient">
-        <span th:text="${invoice.buyer.name}"></span><br />
-        <span th:text="${invoice.buyer.street}"></span><br />
-        <span th:text="${invoice.buyer.zip + ' ' + invoice.buyer.city}"></span>
-    </p>
-
-    <table class="meta">
-        <tr>
-            <th>Betreff</th>
-            <th>Rechnungsnummer</th>
-            <th>Leistungszeitraum</th>
-            <th>Datum</th>
-        </tr>
-        <tr>
-            <td th:text="${invoice.meta.subject}"></td>
-            <td th:text="${invoice.meta.invoiceNumber}"></td>
-            <td>
-                <span th:if="${invoice.meta.servicePeriodStart != null and invoice.meta.servicePeriodEnd != null}"
-                      th:text="${#temporals.format(invoice.meta.servicePeriodStart, 'dd.MM.yyyy') + ' bis ' + #temporals.format(invoice.meta.servicePeriodEnd, 'dd.MM.yyyy')}"></span>
-                <span th:if="${invoice.meta.servicePeriodStart == null or invoice.meta.servicePeriodEnd == null}"
-                      th:text="${#temporals.format(invoice.meta.serviceDate, 'dd.MM.yyyy')}"></span>
-            </td>
-            <td th:text="${#temporals.format(invoice.meta.invoiceDate, 'dd.MM.yyyy')}"></td>
-        </tr>
-    </table>
-
-    <table class="lines">
-        <thead>
-        <tr>
-            <th class="num">Pos.</th>
-            <th class="desc">Beschreibung</th>
-            <th class="qty">Menge</th>
-            <th class="unit">Einheit</th>
-            <th class="vat">USt.</th>
-            <th class="price">Einzelpreis (Netto)</th>
-            <th class="sum">Gesamt (Netto)</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="item,iter : ${invoice.items}">
-            <td class="num" th:text="${iter.index + 1} + '.'"></td>
-            <td class="desc">
-                <span th:text="${item.description}"></span>
-            </td>
-            <td class="qty" th:text="${#numbers.formatDecimal(item.quantity, 1, 2)}"></td>
-            <td class="unit">Stk</td>
-            <td class="vat" th:text="${item.vatRate.label()}"></td>
-            <td class="price" th:text="${#numbers.formatDecimal(item.unitPriceNet, 1, 2)}"></td>
-            <td class="sum" th:text="${#numbers.formatDecimal(item.quantity * item.unitPriceNet, 1, 2)}"></td>
-        </tr>
-        </tbody>
-    </table>
-
-    <div class="totals-box">
-        <table>
-            <tr>
-                <td class="label">Netto gesamt</td>
-                <td class="value" th:text="${'€ ' + #numbers.formatDecimal(totals.netTotal, 1, 2)}"></td>
-            </tr>
-            <tr th:if="${!invoice.smallBusinessRegulation}" th:each="tax : ${totals.taxSummaries}">
-                <td class="label" th:text="${'USt ' + #numbers.formatDecimal(tax.taxRate, 1, 2) + '%'}"></td>
-                <td class="value" th:text="${'€ ' + #numbers.formatDecimal(tax.taxAmount, 1, 2)}"></td>
-            </tr>
-            <tr class="grand">
-                <td class="label" th:text="${invoice.smallBusinessRegulation ? 'Gesamt' : 'Gesamt (Brutto)'}"></td>
-                <td class="value" th:text="${'€ ' + #numbers.formatDecimal(totals.grossTotal, 1, 2)}"></td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="notes">
-        <p th:if="${invoice.smallBusinessRegulation}">Gemäß § 19 UStG wird aufgrund der Kleinunternehmerregelung keine Umsatzsteuer erhoben.</p>
-        <p th:if="${invoice.paymentInstructionText != null and !invoice.paymentInstructionText.isBlank()}" th:text="${invoice.paymentInstructionText}"></p>
-    </div>
 </div>
 
-<div class="footer">
-    <table class="footer-grid">
-        <tr>
-            <td>
-                <strong th:text="${invoice.seller.name}"></strong><br />
-                <span th:text="${invoice.seller.street}"></span><br />
-                <span th:text="${invoice.seller.zip + ' ' + invoice.seller.city}"></span><br />
-                <span>Steuernummer: </span><span th:text="${invoice.seller.taxNumber}"></span><br />
-                <span>USt-ID: </span><span th:text="${invoice.seller.vatId != null and !invoice.seller.vatId.isBlank() ? invoice.seller.vatId : '-'}"></span>
-            </td>
-            <td>
-                <strong>Kontakt</strong><br />
-                <span th:text="${invoice.seller.email != null and !invoice.seller.email.isBlank() ? 'E-Mail: ' + invoice.seller.email : 'E-Mail: -'}"></span><br />
-                <span th:text="${invoice.seller.phone != null and !invoice.seller.phone.isBlank() ? 'Telefon: ' + invoice.seller.phone : 'Telefon: -'}"></span>
-            </td>
-            <td>
-                <strong>Bankverbindung</strong><br />
-                <span>IBAN: </span><span th:text="${invoice.seller.iban}"></span><br />
-                <span>BIC: </span><span th:text="${invoice.seller.bic != null and !invoice.seller.bic.isBlank() ? invoice.seller.bic : '-'}"></span>
-            </td>
-        </tr>
-    </table>
-    <div class="footer-page">Seite 1 von 1</div>
+<div class="section">
+    <h3>Zahlung</h3>
+    <p th:text="${paymentTermsText}"></p>
+    <p th:text="${'IBAN ' + invoice.seller.iban}"></p>
+    <p th:if="${invoice.seller.bic != null and !invoice.seller.bic.isBlank()}" th:text="${'BIC ' + invoice.seller.bic}"></p>
+</div>
+
+<div class="section">
+    <h3>Anmerkungen</h3>
+    <p th:if="${invoice.paymentInstructionText != null and !invoice.paymentInstructionText.isBlank()}" th:text="${invoice.paymentInstructionText}"></p>
+    <p th:if="${invoice.smallBusinessRegulation}">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
 </div>
 </body>
 </html>

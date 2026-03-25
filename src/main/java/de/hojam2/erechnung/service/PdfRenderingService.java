@@ -25,6 +25,7 @@ public class PdfRenderingService {
         context.setVariable("totals", totals);
         context.setVariable("dueDate", formData.getMeta().getDueDate());
         context.setVariable("today", LocalDate.now());
+        context.setVariable("paymentTermsText", "Zahlung per SEPA-Überweisung auf das Konto");
 
         String html = templateEngine.process("pdf/invoice", context);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
