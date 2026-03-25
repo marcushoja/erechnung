@@ -12,13 +12,21 @@ public class InvoiceMetaData {
     @NotBlank(message = "Rechnungsnummer ist erforderlich.")
     private String invoiceNumber;
 
+    @NotBlank(message = "Betreff ist erforderlich.")
+    private String subject;
+
     @NotNull(message = "Rechnungsdatum ist erforderlich.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate invoiceDate;
 
-    @NotNull(message = "Liefer-/Leistungsdatum ist erforderlich.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate serviceDate;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate servicePeriodStart;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate servicePeriodEnd;
 
     @NotNull(message = "Zahlungsziel in Tagen ist erforderlich.")
     @Min(value = 1, message = "Zahlungsziel muss mindestens 1 Tag sein.")
@@ -40,12 +48,36 @@ public class InvoiceMetaData {
         this.invoiceDate = invoiceDate;
     }
 
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
     public LocalDate getServiceDate() {
         return serviceDate;
     }
 
     public void setServiceDate(LocalDate serviceDate) {
         this.serviceDate = serviceDate;
+    }
+
+    public LocalDate getServicePeriodStart() {
+        return servicePeriodStart;
+    }
+
+    public void setServicePeriodStart(LocalDate servicePeriodStart) {
+        this.servicePeriodStart = servicePeriodStart;
+    }
+
+    public LocalDate getServicePeriodEnd() {
+        return servicePeriodEnd;
+    }
+
+    public void setServicePeriodEnd(LocalDate servicePeriodEnd) {
+        this.servicePeriodEnd = servicePeriodEnd;
     }
 
     public Integer getPaymentTargetDays() {

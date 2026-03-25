@@ -15,13 +15,13 @@
 
     <section class="card">
         <h2>Rechnung importieren</h2>
-        <form th:action="@{/import}" method="post" enctype="multipart/form-data" class="inline-form">
-            <input type="file" name="file" accept=".pdf,.xml" required>
+        <form id="import-form" th:action="@{/import}" method="post" enctype="multipart/form-data" class="inline-form">
+            <input id="import-file-input" type="file" name="file" accept=".pdf,.xml" required>
             <button type="submit">Importieren</button>
         </form>
     </section>
 
-    <section class="card" th:if="${errorMessage}">
+    <section class="card" th:if="${errorMessage}" id="error-alert-section">
         <p class="alert error" th:text="${errorMessage}"></p>
     </section>
 
@@ -30,7 +30,7 @@
     </section>
 
     <section class="card">
-        <form th:action="@{/export}" method="post" th:object="${invoiceFormData}">
+        <form id="export-form" th:action="@{/export}" method="post" th:object="${invoiceFormData}">
             <h2>Absenderdaten</h2>
             <div class="grid two">
                 <label>Name / Firmenname *
@@ -57,6 +57,12 @@
                 <label>BIC
                     <input type="text" th:field="*{seller.bic}">
                 </label>
+                <label>E-Mail
+                    <input type="email" th:field="*{seller.email}">
+                </label>
+                <label>Telefon
+                    <input type="text" th:field="*{seller.phone}">
+                </label>
             </div>
 
             <h2>Empfängerdaten</h2>
@@ -82,15 +88,26 @@
             </div>
 
             <h2>Rechnungs-Metadaten</h2>
+            <p>Leistungsdatum oder alternativ vollständigen Leistungszeitraum angeben.</p>
             <div class="grid two">
+                <label>Betreff *
+                    <input type="text" th:field="*{meta.subject}" required>
+                </label>
                 <label>Rechnungsnummer *
                     <input type="text" th:field="*{meta.invoiceNumber}" required>
                 </label>
                 <label>Rechnungsdatum *
                     <input type="date" th:field="*{meta.invoiceDate}" required>
                 </label>
-                <label>Liefer-/Leistungsdatum *
-                    <input type="date" th:field="*{meta.serviceDate}" required>
+                <label>Leistungsdatum
+                    <input type="date" th:field="*{meta.serviceDate}">
+                </label>
+                <label class="period-row">Leistungszeitraum
+                    <span class="period-inputs">
+                        <input type="date" th:field="*{meta.servicePeriodStart}">
+                        <span>bis</span>
+                        <input type="date" th:field="*{meta.servicePeriodEnd}">
+                    </span>
                 </label>
                 <label>Zahlungsziel (Tage) *
                     <input type="number" min="1" th:field="*{meta.paymentTargetDays}" required>
@@ -98,6 +115,7 @@
             </div>
 
             <h2>Rechnungspositionen</h2>
+            <p>Alle Preise sind Netto-Preise. Umsatzsteuer wird darunter separat ausgewiesen.</p>
             <div class="table-wrap">
                 <table id="items-table">
                     <thead>
@@ -111,7 +129,7 @@
                     </thead>
                     <tbody id="items-body">
                     <tr th:each="item, iter : *{items}" class="item-row">
-                        <td><input type="number" min="0.0001" step="0.0001" th:field="*{items[__${iter.index}__].quantity}" required></td>
+                        <td><input type="number" min="0.01" step="0.01" th:field="*{items[__${iter.index}__].quantity}" required></td>
                         <td><input type="text" th:field="*{items[__${iter.index}__].description}" required></td>
                         <td><input type="number" min="0" step="0.01" th:field="*{items[__${iter.index}__].unitPriceNet}" required></td>
                         <td>
@@ -119,13 +137,27 @@
                                 <option th:each="rate : ${vatRates}" th:value="${rate}" th:text="${rate.label()}"></option>
                             </select>
                         </td>
-                        <td><button type="button" class="danger remove-row">Entfernen</button></td>
+                        <td class="actions-cell">
+                            <button type="button" class="copy-row">Kopieren</button>
+                            <button type="button" class="danger remove-row">Entfernen</button>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
 
             <button type="button" id="add-row">Position hinzufügen</button>
+
+            <div class="option-block">
+                <label class="check-label">
+                    <input type="checkbox" th:field="*{smallBusinessRegulation}" id="small-business-checkbox">
+                    Kleinunternehmerregelung (§ 19 UStG)
+                </label>
+            </div>
+
+            <label>Zahlungshinweis
+                <textarea th:field="*{paymentInstructionText}" rows="3"></textarea>
+            </label>
 
             <h2>Export</h2>
             <div class="formats">
@@ -140,17 +172,19 @@
             </div>
 
             <div class="totals">
-                <p>Netto gesamt: <strong id="net-total-value" th:text="${#numbers.formatDecimal(totals.netTotal, 1, 2)} + ' EUR'"></strong></p>
+                <p><span id="net-total-label">Netto gesamt:</span> <strong id="net-total-value" th:text="${#numbers.formatDecimal(totals.netTotal, 1, 2)} + ' EUR'"></strong></p>
                 <div id="tax-summary-lines">
                     <p th:each="tax : ${totals.taxSummaries}">
                         Steuer (<span th:text="${#numbers.formatDecimal(tax.taxRate, 1, 2)}"></span>%):
                         <strong th:text="${#numbers.formatDecimal(tax.taxAmount, 1, 2)} + ' EUR'"></strong>
                     </p>
                 </div>
-                <p>Brutto gesamt: <strong id="gross-total-value" th:text="${#numbers.formatDecimal(totals.grossTotal, 1, 2)} + ' EUR'"></strong></p>
+                <p id="tax-total-line">USt gesamt: <strong id="tax-total-value" th:text="${#numbers.formatDecimal(totals.taxTotal, 1, 2)} + ' EUR'"></strong></p>
+                <p><span id="gross-total-label">Gesamt (Brutto):</span> <strong id="gross-total-value" th:text="${#numbers.formatDecimal(totals.grossTotal, 1, 2)} + ' EUR'"></strong></p>
+                <p id="small-business-note" th:if="*{smallBusinessRegulation}">Gemäß § 19 UStG wird aufgrund der Kleinunternehmerregelung keine Umsatzsteuer erhoben.</p>
             </div>
 
-            <ul class="errors" th:if="${#fields.hasAnyErrors()}">
+            <ul class="errors" id="validation-errors" th:if="${#fields.hasAnyErrors()}">
                 <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
             </ul>
 
@@ -161,7 +195,7 @@
 
 <template id="item-row-template">
     <tr class="item-row">
-        <td><input type="number" min="0.0001" step="0.0001" name="items[__INDEX__].quantity" required></td>
+        <td><input type="number" min="0.01" step="0.01" name="items[__INDEX__].quantity" required></td>
         <td><input type="text" name="items[__INDEX__].description" required></td>
         <td><input type="number" min="0" step="0.01" name="items[__INDEX__].unitPriceNet" required></td>
         <td>
@@ -169,10 +203,15 @@
                 <option th:each="rate : ${vatRates}" th:value="${rate}" th:text="${rate.label()}"></option>
             </select>
         </td>
-        <td><button type="button" class="danger remove-row">Entfernen</button></td>
+        <td class="actions-cell">
+            <button type="button" class="copy-row">Kopieren</button>
+            <button type="button" class="danger remove-row">Entfernen</button>
+        </td>
     </tr>
 </template>
 
 <script th:src="@{/js/items.js}"></script>
+<script th:src="@{/js/import.js}"></script>
+<script th:src="@{/js/export.js}"></script>
 </body>
 </html>

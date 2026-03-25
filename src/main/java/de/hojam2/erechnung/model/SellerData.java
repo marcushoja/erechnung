@@ -1,6 +1,7 @@
 package de.hojam2.erechnung.model;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
 
 public class SellerData {
 
@@ -25,6 +26,11 @@ public class SellerData {
     private String iban;
 
     private String bic;
+
+    @Email(message = "E-Mail-Adresse ist ungültig.")
+    private String email;
+
+    private String phone;
 
     public String getName() {
         return name;
@@ -88,5 +94,21 @@ public class SellerData {
 
     public void setBic(String bic) {
         this.bic = bic;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

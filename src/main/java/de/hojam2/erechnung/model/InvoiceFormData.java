@@ -8,6 +8,8 @@ import java.util.List;
 
 public class InvoiceFormData {
 
+    public static final String DEFAULT_PAYMENT_INSTRUCTION = "Bitte überweisen Sie den Rechnungsbetrag innerhalb der nächsten 14 Tage auf das unten genannte Konto.";
+
     @Valid
     @NotNull
     private SellerData seller = new SellerData();
@@ -26,6 +28,10 @@ public class InvoiceFormData {
 
     @NotNull(message = "Exportformat ist erforderlich.")
     private ExportFormat exportFormat = ExportFormat.ZUGFERD_PDF;
+
+    private boolean smallBusinessRegulation;
+
+    private String paymentInstructionText = DEFAULT_PAYMENT_INSTRUCTION;
 
     public SellerData getSeller() {
         return seller;
@@ -65,5 +71,21 @@ public class InvoiceFormData {
 
     public void setExportFormat(ExportFormat exportFormat) {
         this.exportFormat = exportFormat;
+    }
+
+    public boolean isSmallBusinessRegulation() {
+        return smallBusinessRegulation;
+    }
+
+    public void setSmallBusinessRegulation(boolean smallBusinessRegulation) {
+        this.smallBusinessRegulation = smallBusinessRegulation;
+    }
+
+    public String getPaymentInstructionText() {
+        return paymentInstructionText;
+    }
+
+    public void setPaymentInstructionText(String paymentInstructionText) {
+        this.paymentInstructionText = paymentInstructionText;
     }
 }

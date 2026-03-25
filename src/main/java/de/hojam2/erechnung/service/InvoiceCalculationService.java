@@ -27,8 +27,9 @@ public class InvoiceCalculationService {
                 continue;
             }
             BigDecimal lineNet = item.getQuantity().multiply(item.getUnitPriceNet());
+            BigDecimal effectiveRate = formData.isSmallBusinessRegulation() ? BigDecimal.ZERO : item.getVatRate().percentage();
             netTotal = netTotal.add(lineNet);
-            netPerRate.merge(item.getVatRate().percentage(), lineNet, BigDecimal::add);
+            netPerRate.merge(effectiveRate, lineNet, BigDecimal::add);
         }
 
         netTotal = normalize(netTotal);

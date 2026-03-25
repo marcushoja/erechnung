@@ -2,7 +2,12 @@
     const tableBody = document.getElementById("items-body");
     const addButton = document.getElementById("add-row");
     const template = document.getElementById("item-row-template");
+    const smallBusinessCheckbox = document.getElementById("small-business-checkbox");
     const netTotalValue = document.getElementById("net-total-value");
+    const taxTotalValue = document.getElementById("tax-total-value");
+    const taxTotalLine = document.getElementById("tax-total-line");
+    const grossTotalLabel = document.getElementById("gross-total-label");
+    const smallBusinessNote = document.getElementById("small-business-note");
     const grossTotalValue = document.getElementById("gross-total-value");
     const taxSummaryLines = document.getElementById("tax-summary-lines");
 
@@ -38,8 +43,20 @@
 
     const formatEuro = (amount) => `${numberFormatter.format(roundMoney(amount))} EUR`;
 
+    const isSmallBusiness = () => Boolean(smallBusinessCheckbox?.checked);
+
+    const applySmallBusinessMode = () => {
+        const enabled = isSmallBusiness();
+        tableBody.querySelectorAll('select[name$=".vatRate"]').forEach((select) => {
+            if (enabled) {
+                select.value = "VAT_0";
+            }
+            select.classList.toggle("locked-vat", enabled);
+        });
+    };
+
     const recalculateTotals = () => {
-        if (!netTotalValue || !grossTotalValue || !taxSummaryLines) {
+        if (!netTotalValue || !grossTotalValue || !taxSummaryLines || !taxTotalValue) {
             return;
         }
 
@@ -56,7 +73,7 @@
             }
 
             const lineNet = quantity * unitPrice;
-            const vatRate = vatRateFromValue(vatRaw);
+            const vatRate = isSmallBusiness() ? 0 : vatRateFromValue(vatRaw);
             const lineTax = lineNet * (vatRate / 100);
 
             netTotal += lineNet;
@@ -79,7 +96,23 @@
         const grossTotal = roundMoney(netTotal + taxTotal);
 
         netTotalValue.textContent = formatEuro(netTotal);
+        taxTotalValue.textContent = formatEuro(taxTotal);
         grossTotalValue.textContent = formatEuro(grossTotal);
+
+        if (isSmallBusiness()) {
+            taxSummaryLines.innerHTML = "";
+            taxTotalLine.style.display = "none";
+            grossTotalLabel.textContent = "Gesamt:";
+            if (smallBusinessNote) {
+                smallBusinessNote.style.display = "block";
+            }
+        } else {
+            taxTotalLine.style.display = "block";
+            grossTotalLabel.textContent = "Gesamt (Brutto):";
+            if (smallBusinessNote) {
+                smallBusinessNote.style.display = "none";
+            }
+        }
     };
 
     const reindex = () => {
@@ -94,11 +127,6 @@
                 }
                 if (id.includes("items")) {
                     el.setAttribute("id", id.replace(/items\d+/, `items${index}`));
-                }
-
-                if (el.tagName === "INPUT" || el.tagName === "SELECT") {
-                    el.addEventListener("input", recalculateTotals);
-                    el.addEventListener("change", recalculateTotals);
                 }
             });
         });
@@ -119,21 +147,95 @@
         });
     };
 
-    tableBody.querySelectorAll(".remove-row").forEach(removeHandler);
+    const copyHandler = (button) => {
+        button.addEventListener("click", () => {
+            const sourceRow = button.closest("tr.item-row");
+            if (!sourceRow) {
+                return;
+            }
+
+            const index = tableBody.querySelectorAll("tr.item-row").length;
+            const html = template.innerHTML.replaceAll("__INDEX__", index.toString());
+            tableBody.insertAdjacentHTML("beforeend", html);
+            const newRow = tableBody.lastElementChild;
+
+            const sourceQuantity = sourceRow.querySelector('input[name$=".quantity"]')?.value || "";
+            const sourceDescription = sourceRow.querySelector('input[name$=".description"]')?.value || "";
+            const sourceUnitPrice = sourceRow.querySelector('input[name$=".unitPriceNet"]')?.value || "";
+            const sourceVat = sourceRow.querySelector('select[name$=".vatRate"]')?.value || "VAT_19";
+
+            const quantityInput = newRow.querySelector('input[name$=".quantity"]');
+            const descriptionInput = newRow.querySelector('input[name$=".description"]');
+            const unitPriceInput = newRow.querySelector('input[name$=".unitPriceNet"]');
+            const vatSelect = newRow.querySelector('select[name$=".vatRate"]');
+
+            if (quantityInput) quantityInput.value = sourceQuantity;
+            if (descriptionInput) descriptionInput.value = sourceDescription;
+            if (unitPriceInput) unitPriceInput.value = sourceUnitPrice;
+            if (vatSelect) vatSelect.value = isSmallBusiness() ? "VAT_0" : sourceVat;
+
+            bindRow(newRow);
+            reindex();
+            applySmallBusinessMode();
+            recalculateTotals();
+        });
+    };
+
+    const bindRow = (row) => {
+        row.querySelectorAll("input, select").forEach((el) => {
+            if (el.dataset.bound === "true") {
+                return;
+            }
+            el.addEventListener("input", recalculateTotals);
+            el.addEventListener("change", recalculateTotals);
+            el.dataset.bound = "true";
+        });
+
+        const removeButton = row.querySelector(".remove-row");
+        if (removeButton && removeButton.dataset.bound !== "true") {
+            removeHandler(removeButton);
+            removeButton.dataset.bound = "true";
+        }
+
+        const copyButton = row.querySelector(".copy-row");
+        if (copyButton && copyButton.dataset.bound !== "true") {
+            copyHandler(copyButton);
+            copyButton.dataset.bound = "true";
+        }
+
+        const vatSelect = row.querySelector('select[name$=".vatRate"]');
+        if (vatSelect && vatSelect.dataset.lockHandlerBound !== "true") {
+            vatSelect.addEventListener("change", () => {
+                if (isSmallBusiness()) {
+                    vatSelect.value = "VAT_0";
+                    recalculateTotals();
+                }
+            });
+            vatSelect.dataset.lockHandlerBound = "true";
+        }
+    };
+
+    tableBody.querySelectorAll("tr.item-row").forEach(bindRow);
 
     addButton.addEventListener("click", () => {
         const index = tableBody.querySelectorAll("tr.item-row").length;
         const html = template.innerHTML.replaceAll("__INDEX__", index.toString());
         tableBody.insertAdjacentHTML("beforeend", html);
         const newRow = tableBody.lastElementChild;
-        const removeButton = newRow.querySelector(".remove-row");
-        if (removeButton) {
-            removeHandler(removeButton);
-        }
+        bindRow(newRow);
         reindex();
+        applySmallBusinessMode();
         recalculateTotals();
     });
 
+    if (smallBusinessCheckbox) {
+        smallBusinessCheckbox.addEventListener("change", () => {
+            applySmallBusinessMode();
+            recalculateTotals();
+        });
+    }
+
     reindex();
+    applySmallBusinessMode();
     recalculateTotals();
 })();

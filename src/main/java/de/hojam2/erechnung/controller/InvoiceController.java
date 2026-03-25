@@ -11,8 +11,11 @@ import de.hojam2.erechnung.service.InvoiceImportService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -77,8 +80,24 @@ public class InvoiceController {
     public Object exportInvoice(@Valid @ModelAttribute("invoiceFormData") InvoiceFormData formData,
                                 BindingResult bindingResult,
                                 Model model) throws IOException {
+        normalizeItemPrecision(formData);
+        applySmallBusinessVat(formData);
+
         if (formData.getItems() == null || formData.getItems().isEmpty()) {
             bindingResult.reject("items.empty", "Mindestens eine Rechnungsposition ist erforderlich.");
+        }
+
+        if (formData.getMeta().getServiceDate() == null
+            && (formData.getMeta().getServicePeriodStart() == null || formData.getMeta().getServicePeriodEnd() == null)) {
+            bindingResult.reject("service.missing", "Bitte entweder ein Leistungsdatum oder einen Leistungszeitraum angeben.");
+        }
+        if ((formData.getMeta().getServicePeriodStart() != null && formData.getMeta().getServicePeriodEnd() == null)
+            || (formData.getMeta().getServicePeriodStart() == null && formData.getMeta().getServicePeriodEnd() != null)) {
+            bindingResult.reject("service.period.partial", "Für den Leistungszeitraum bitte Start- und Enddatum gemeinsam ausfüllen.");
+        }
+        if (formData.getMeta().getServicePeriodStart() != null && formData.getMeta().getServicePeriodEnd() != null
+            && formData.getMeta().getServicePeriodStart().isAfter(formData.getMeta().getServicePeriodEnd())) {
+            bindingResult.reject("service.period.order", "Der Beginn des Leistungszeitraums darf nicht nach dem Ende liegen.");
         }
 
         for (int i = 0; i < formData.getItems().size(); i++) {
@@ -134,7 +153,9 @@ public class InvoiceController {
 
     private InvoiceFormData defaultFormData() {
         InvoiceFormData formData = new InvoiceFormData();
+        formData.getMeta().setInvoiceNumber(LocalDate.now().getYear() + "_001");
         formData.getMeta().setInvoiceDate(LocalDate.now());
+        formData.getMeta().setSubject(defaultSubject(LocalDate.now()));
         formData.getMeta().setServiceDate(LocalDate.now());
         formData.getMeta().setPaymentTargetDays(14);
 
@@ -147,10 +168,38 @@ public class InvoiceController {
         return formData;
     }
 
+    private void applySmallBusinessVat(InvoiceFormData formData) {
+        if (!formData.isSmallBusinessRegulation() || formData.getItems() == null) {
+            return;
+        }
+        for (InvoiceLineItem item : formData.getItems()) {
+            item.setVatRate(VatRate.VAT_0);
+        }
+    }
+
+    private void normalizeItemPrecision(InvoiceFormData formData) {
+        if (formData.getItems() == null) {
+            return;
+        }
+        for (InvoiceLineItem item : formData.getItems()) {
+            if (item.getQuantity() != null) {
+                item.setQuantity(item.getQuantity().setScale(2, RoundingMode.HALF_UP));
+            }
+            if (item.getUnitPriceNet() != null) {
+                item.setUnitPriceNet(item.getUnitPriceNet().setScale(2, RoundingMode.HALF_UP));
+            }
+        }
+    }
+
     private String sanitizeFilenamePart(String raw) {
         if (StringUtils.isBlank(raw)) {
             return "Unbekannt";
         }
         return raw.replaceAll("[^a-zA-Z0-9ÄÖÜäöüß_-]", "_");
+    }
+
+    private String defaultSubject(LocalDate invoiceDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.GERMAN);
+        return "Rechnung " + StringUtils.capitalize(invoiceDate.format(formatter));
     }
 }

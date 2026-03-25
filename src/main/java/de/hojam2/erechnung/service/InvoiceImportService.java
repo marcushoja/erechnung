@@ -10,17 +10,22 @@ import de.hojam2.erechnung.model.VatRate;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.mustangproject.BankDetails;
+import org.mustangproject.IncludedNote;
 import org.mustangproject.Invoice;
 import org.mustangproject.TradeParty;
 import org.mustangproject.ZUGFeRD.IZUGFeRDExportableItem;
+import org.mustangproject.ZUGFeRD.IZUGFeRDExportableContact;
 import org.mustangproject.ZUGFeRD.ZUGFeRDInvoiceImporter;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +44,8 @@ public class InvoiceImportService {
         formData.setMeta(mapMeta(parsed));
         formData.setItems(mapItems(parsed));
         formData.setExportFormat(ExportFormat.ZUGFERD_PDF);
+        formData.setPaymentInstructionText(resolvePaymentHint(parsed));
+        formData.setSmallBusinessRegulation(hasOnlyZeroVat(formData.getItems()));
         if (formData.getItems().isEmpty()) {
             formData.getItems().add(defaultItem());
         }
@@ -71,6 +78,11 @@ public class InvoiceImportService {
                 BankDetails first = bankDetails.get(0);
                 seller.setIban(first.getIBAN());
                 seller.setBic(first.getBIC());
+            }
+            IZUGFeRDExportableContact contact = sender.getContact();
+            if (contact != null) {
+                seller.setEmail(contact.getEMail());
+                seller.setPhone(contact.getPhone());
             }
         }
 
@@ -107,7 +119,10 @@ public class InvoiceImportService {
         LocalDate issueDate = toLocalDate(parsed.getIssueDate(), LocalDate.now());
         LocalDate serviceDate = toLocalDate(parsed.getDeliveryDate(), issueDate);
         metaData.setInvoiceDate(issueDate);
+        metaData.setSubject(resolveSubject(parsed, issueDate));
         metaData.setServiceDate(serviceDate);
+        metaData.setServicePeriodStart(toLocalDate(parsed.getDetailedDeliveryPeriodFrom(), null));
+        metaData.setServicePeriodEnd(toLocalDate(parsed.getDetailedDeliveryPeriodTo(), null));
 
         LocalDate dueDate = toLocalDate(parsed.getDueDate(), issueDate.plusDays(14));
         long days = ChronoUnit.DAYS.between(issueDate, dueDate);
@@ -124,11 +139,11 @@ public class InvoiceImportService {
         }
         for (IZUGFeRDExportableItem importedItem : importedItems) {
             InvoiceLineItem item = new InvoiceLineItem();
-            item.setQuantity(defaultBigDecimal(importedItem.getQuantity(), BigDecimal.ONE));
+            item.setQuantity(scaleToTwo(defaultBigDecimal(importedItem.getQuantity(), BigDecimal.ONE)));
             item.setDescription(importedItem.getProduct() != null
                 ? StringUtils.defaultIfBlank(importedItem.getProduct().getName(), importedItem.getProduct().getDescription())
                 : "Position");
-            item.setUnitPriceNet(defaultBigDecimal(importedItem.getPrice(), BigDecimal.ZERO));
+            item.setUnitPriceNet(scaleToTwo(defaultBigDecimal(importedItem.getPrice(), BigDecimal.ZERO)));
             BigDecimal vat = importedItem.getProduct() != null ? importedItem.getProduct().getVATPercent() : new BigDecimal("19");
             item.setVatRate(VatRate.fromPercentage(vat));
             items.add(item);
@@ -138,6 +153,10 @@ public class InvoiceImportService {
 
     private BigDecimal defaultBigDecimal(BigDecimal value, BigDecimal fallback) {
         return value == null ? fallback : value;
+    }
+
+    private BigDecimal scaleToTwo(BigDecimal value) {
+        return value.setScale(2, RoundingMode.HALF_UP);
     }
 
     private LocalDate toLocalDate(Date date, LocalDate fallback) {
@@ -154,5 +173,63 @@ public class InvoiceImportService {
         item.setDescription("");
         item.setVatRate(VatRate.VAT_19);
         return item;
+    }
+
+    private boolean hasOnlyZeroVat(List<InvoiceLineItem> items) {
+        if (items == null || items.isEmpty()) {
+            return false;
+        }
+        return items.stream().allMatch(item -> item.getVatRate() == VatRate.VAT_0);
+    }
+
+    private String defaultSubject(LocalDate invoiceDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.GERMAN);
+        return "Rechnung " + StringUtils.capitalize(invoiceDate.format(formatter));
+    }
+
+    private String resolvePaymentHint(Invoice parsed) {
+        String noteBasedHint = extractPrefixedNote(parsed, MustangInvoiceMapper.PAYMENT_HINT_PREFIX);
+        if (StringUtils.isNotBlank(noteBasedHint)) {
+            return noteBasedHint;
+        }
+        return StringUtils.defaultIfBlank(parsed.getPaymentTermDescription(), InvoiceFormData.DEFAULT_PAYMENT_INSTRUCTION);
+    }
+
+    private String resolveSubject(Invoice parsed, LocalDate issueDate) {
+        String noteBasedSubject = extractPrefixedNote(parsed, MustangInvoiceMapper.SUBJECT_PREFIX);
+        if (StringUtils.isNotBlank(noteBasedSubject)) {
+            return noteBasedSubject;
+        }
+        return StringUtils.defaultIfBlank(parsed.getDocumentName(), defaultSubject(issueDate));
+    }
+
+    private String extractPrefixedNote(Invoice parsed, String prefix) {
+        for (String note : collectAllNotes(parsed)) {
+            if (StringUtils.startsWith(note, prefix)) {
+                return StringUtils.removeStart(note, prefix);
+            }
+        }
+        return null;
+    }
+
+    private List<String> collectAllNotes(Invoice parsed) {
+        List<String> values = new ArrayList<>();
+        String[] noteStrings = parsed.getNotes();
+        if (noteStrings != null) {
+            for (String note : noteStrings) {
+                if (StringUtils.isNotBlank(note)) {
+                    values.add(note);
+                }
+            }
+        }
+        List<IncludedNote> notesWithCodes = parsed.getNotesWithSubjectCode();
+        if (notesWithCodes != null) {
+            for (IncludedNote includedNote : notesWithCodes) {
+                if (includedNote != null && StringUtils.isNotBlank(includedNote.getContent())) {
+                    values.add(includedNote.getContent());
+                }
+            }
+        }
+        return values;
     }
 }
