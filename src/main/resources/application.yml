@@ -10,4 +10,4 @@ spring:
 app:
   basic:
     username: ${APP_BASIC_USER:freelancer}
-    password: ${APP_BASIC_PASS:change-me-now}
+    password: ${APP_BASIC_PASS:freelancer2026}
