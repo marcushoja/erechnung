@@ -1,6 +1,7 @@
 package de.hojam2.erechnung.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -16,17 +17,27 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/health").permitAll()
-                .anyRequest().authenticated()
-            )
-            .httpBasic(Customizer.withDefaults());
+    SecurityFilterChain filterChain(
+        HttpSecurity http,
+        @Value("${app.basic.enabled:false}") boolean basicAuthEnabled
+    ) throws Exception {
+        if (basicAuthEnabled) {
+            http
+                .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/css/**", "/js/**", "/health").permitAll()
+                    .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults());
+        } else {
+            http
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        }
+
         return http.build();
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "app.basic", name = "enabled", havingValue = "true")
     UserDetailsService users(
         @Value("${app.basic.username}") String username,
         @Value("${app.basic.password}") String password,
