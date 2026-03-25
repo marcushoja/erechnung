@@ -32,6 +32,7 @@
         .section { margin-top: 12mm; }
         .section h3 { font-size: 14pt; margin-bottom: 2mm; }
         .section p { line-height: 1.4; white-space: pre-line; }
+        .small-business-note { margin-top: 4mm; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -132,7 +133,7 @@
 <div class="section">
     <h3>Anmerkungen</h3>
     <p th:if="${invoice.paymentInstructionText != null and !invoice.paymentInstructionText.isBlank()}" th:text="${invoice.paymentInstructionText}"></p>
-    <p th:if="${invoice.smallBusinessRegulation}">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
+    <p class="small-business-note" th:if="${invoice.smallBusinessRegulation}">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
 </div>
 </body>
 </html>
