@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Rechnungs-Generator</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="page">
+    <header class="hero">
+        <h1>E-Rechnungs-Generator</h1>
+        <p>Stateless Erstellung von EN-16931-konformen Rechnungen (ZUGFeRD/XRechnung).</p>
+    </header>
+
+    <section class="card">
+        <h2>Rechnung importieren</h2>
+        <form th:action="@{/import}" method="post" enctype="multipart/form-data" class="inline-form">
+            <input type="file" name="file" accept=".pdf,.xml" required>
+            <button type="submit">Importieren</button>
+        </form>
+    </section>
+
+    <section class="card" th:if="${errorMessage}">
+        <p class="alert error" th:text="${errorMessage}"></p>
+    </section>
+
+    <section class="card" th:if="${successMessage}">
+        <p class="alert success" th:text="${successMessage}"></p>
+    </section>
+
+    <section class="card">
+        <form th:action="@{/export}" method="post" th:object="${invoiceFormData}">
+            <h2>Absenderdaten</h2>
+            <div class="grid two">
+                <label>Name / Firmenname *
+                    <input type="text" th:field="*{seller.name}" required>
+                </label>
+                <label>Straße &amp; Hausnummer *
+                    <input type="text" th:field="*{seller.street}" required>
+                </label>
+                <label>PLZ *
+                    <input type="text" th:field="*{seller.zip}" required>
+                </label>
+                <label>Ort *
+                    <input type="text" th:field="*{seller.city}" required>
+                </label>
+                <label>Steuernummer *
+                    <input type="text" th:field="*{seller.taxNumber}" required>
+                </label>
+                <label>Umsatzsteuer-ID
+                    <input type="text" th:field="*{seller.vatId}">
+                </label>
+                <label>IBAN *
+                    <input type="text" th:field="*{seller.iban}" required>
+                </label>
+                <label>BIC
+                    <input type="text" th:field="*{seller.bic}">
+                </label>
+            </div>
+
+            <h2>Empfängerdaten</h2>
+            <div class="grid two">
+                <label>Name / Firmenname *
+                    <input type="text" th:field="*{buyer.name}" required>
+                </label>
+                <label>Straße &amp; Hausnummer *
+                    <input type="text" th:field="*{buyer.street}" required>
+                </label>
+                <label>PLZ *
+                    <input type="text" th:field="*{buyer.zip}" required>
+                </label>
+                <label>Ort *
+                    <input type="text" th:field="*{buyer.city}" required>
+                </label>
+                <label>Umsatzsteuer-ID
+                    <input type="text" th:field="*{buyer.vatId}">
+                </label>
+                <label>Leitweg-ID (Behörde) / Buyer Reference
+                    <input type="text" th:field="*{buyer.buyerReference}">
+                </label>
+            </div>
+
+            <h2>Rechnungs-Metadaten</h2>
+            <div class="grid two">
+                <label>Rechnungsnummer *
+                    <input type="text" th:field="*{meta.invoiceNumber}" required>
+                </label>
+                <label>Rechnungsdatum *
+                    <input type="date" th:field="*{meta.invoiceDate}" required>
+                </label>
+                <label>Liefer-/Leistungsdatum *
+                    <input type="date" th:field="*{meta.serviceDate}" required>
+                </label>
+                <label>Zahlungsziel (Tage) *
+                    <input type="number" min="1" th:field="*{meta.paymentTargetDays}" required>
+                </label>
+            </div>
+
+            <h2>Rechnungspositionen</h2>
+            <div class="table-wrap">
+                <table id="items-table">
+                    <thead>
+                    <tr>
+                        <th>Anzahl *</th>
+                        <th>Beschreibung *</th>
+                        <th>Einzelpreis (Netto) *</th>
+                        <th>Steuersatz *</th>
+                        <th>Aktion</th>
+                    </tr>
+                    </thead>
+                    <tbody id="items-body">
+                    <tr th:each="item, iter : *{items}" class="item-row">
+                        <td><input type="number" min="0.0001" step="0.0001" th:field="*{items[__${iter.index}__].quantity}" required></td>
+                        <td><input type="text" th:field="*{items[__${iter.index}__].description}" required></td>
+                        <td><input type="number" min="0" step="0.01" th:field="*{items[__${iter.index}__].unitPriceNet}" required></td>
+                        <td>
+                            <select th:field="*{items[__${iter.index}__].vatRate}" required>
+                                <option th:each="rate : ${vatRates}" th:value="${rate}" th:text="${rate.label()}"></option>
+                            </select>
+                        </td>
+                        <td><button type="button" class="danger remove-row">Entfernen</button></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" id="add-row">Position hinzufügen</button>
+
+            <h2>Export</h2>
+            <div class="formats">
+                <label>
+                    <input type="radio" th:field="*{exportFormat}" value="ZUGFERD_PDF">
+                    ZUGFeRD (PDF)
+                </label>
+                <label>
+                    <input type="radio" th:field="*{exportFormat}" value="XRECHNUNG_XML">
+                    XRechnung (XML)
+                </label>
+            </div>
+
+            <div class="totals">
+                <p>Netto gesamt: <strong id="net-total-value" th:text="${#numbers.formatDecimal(totals.netTotal, 1, 2)} + ' EUR'"></strong></p>
+                <div id="tax-summary-lines">
+                    <p th:each="tax : ${totals.taxSummaries}">
+                        Steuer (<span th:text="${#numbers.formatDecimal(tax.taxRate, 1, 2)}"></span>%):
+                        <strong th:text="${#numbers.formatDecimal(tax.taxAmount, 1, 2)} + ' EUR'"></strong>
+                    </p>
+                </div>
+                <p>Brutto gesamt: <strong id="gross-total-value" th:text="${#numbers.formatDecimal(totals.grossTotal, 1, 2)} + ' EUR'"></strong></p>
+            </div>
+
+            <ul class="errors" th:if="${#fields.hasAnyErrors()}">
+                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+            </ul>
+
+            <button type="submit" class="primary">Exportieren</button>
+        </form>
+    </section>
+</main>
+
+<template id="item-row-template">
+    <tr class="item-row">
+        <td><input type="number" min="0.0001" step="0.0001" name="items[__INDEX__].quantity" required></td>
+        <td><input type="text" name="items[__INDEX__].description" required></td>
+        <td><input type="number" min="0" step="0.01" name="items[__INDEX__].unitPriceNet" required></td>
+        <td>
+            <select name="items[__INDEX__].vatRate" required>
+                <option th:each="rate : ${vatRates}" th:value="${rate}" th:text="${rate.label()}"></option>
+            </select>
+        </td>
+        <td><button type="button" class="danger remove-row">Entfernen</button></td>
+    </tr>
+</template>
+
+<script th:src="@{/js/items.js}"></script>
+</body>
+</html>

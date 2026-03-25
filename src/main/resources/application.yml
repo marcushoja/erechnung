@@ -1,0 +1,13 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  basic:
+    username: ${APP_BASIC_USER:freelancer}
+    password: ${APP_BASIC_PASS:change-me-now}

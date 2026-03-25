@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: Helvetica, sans-serif; color: #1b263b; font-size: 11pt; }
+        h1 { margin-bottom: 0.3rem; }
+        .muted { color: #5a6c7f; }
+        .block { margin-bottom: 0.4rem; }
+        .spacer { height: 16px; }
+        .table-section { margin-top: 0.6rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #d3dde6; padding: 6px; text-align: left; }
+        th { background: #eef4f8; }
+        .right { text-align: right; }
+        .totals { margin-top: 1rem; width: 55%; margin-left: auto; }
+        .totals td { border: none; padding: 3px 0; }
+    </style>
+</head>
+<body>
+<h1>Rechnung <span th:text="${invoice.meta.invoiceNumber}"></span></h1>
+<p class="muted">
+    Rechnungsdatum: <span th:text="${#temporals.format(invoice.meta.invoiceDate, 'dd.MM.yyyy')}"></span> |
+    Leistungsdatum: <span th:text="${#temporals.format(invoice.meta.serviceDate, 'dd.MM.yyyy')}"></span> |
+    Fällig am: <span th:text="${#temporals.format(dueDate, 'dd.MM.yyyy')}"></span>
+</p>
+
+<div class="block">
+    <strong>Absender</strong><br />
+    <span th:text="${invoice.seller.name}"></span><br />
+    <span th:text="${invoice.seller.street}"></span><br />
+    <span th:text="${invoice.seller.zip + ' ' + invoice.seller.city}"></span><br />
+    Steuernummer: <span th:text="${invoice.seller.taxNumber}"></span><br />
+    IBAN: <span th:text="${invoice.seller.iban}"></span>
+    <span th:if="${invoice.seller.bic != null and !invoice.seller.bic.isBlank()}"> | BIC: <span th:text="${invoice.seller.bic}"></span></span>
+</div>
+
+<div class="spacer"></div>
+
+<div class="block">
+    <strong>Empfänger</strong><br />
+    <span th:text="${invoice.buyer.name}"></span><br />
+    <span th:text="${invoice.buyer.street}"></span><br />
+    <span th:text="${invoice.buyer.zip + ' ' + invoice.buyer.city}"></span><br />
+    <span th:if="${invoice.buyer.buyerReference != null and !invoice.buyer.buyerReference.isBlank()}">
+        Buyer Reference: <span th:text="${invoice.buyer.buyerReference}"></span>
+    </span>
+</div>
+
+<div class="spacer"></div>
+
+<div class="table-section">
+<table>
+    <thead>
+    <tr>
+        <th>Anzahl</th>
+        <th>Beschreibung</th>
+        <th>Einzelpreis Netto</th>
+        <th>Steuer</th>
+        <th>Zeilensumme Netto</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${invoice.items}">
+        <td th:text="${item.quantity}"></td>
+        <td th:text="${item.description}"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(item.unitPriceNet, 1, 2)} + ' EUR'"></td>
+        <td class="right" th:text="${item.vatRate.label()}"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(item.quantity * item.unitPriceNet, 1, 2)} + ' EUR'"></td>
+    </tr>
+    </tbody>
+</table>
+</div>
+
+<table class="totals">
+    <tr>
+        <td>Netto gesamt:</td>
+        <td class="right" th:text="${#numbers.formatDecimal(totals.netTotal, 1, 2)} + ' EUR'"></td>
+    </tr>
+    <tr th:each="tax : ${totals.taxSummaries}">
+        <td th:text="${'Steuer ' + #numbers.formatDecimal(tax.taxRate,1,2) + '%:'}"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(tax.taxAmount, 1, 2)} + ' EUR'"></td>
+    </tr>
+    <tr>
+        <td><strong>Brutto gesamt:</strong></td>
+        <td class="right"><strong th:text="${#numbers.formatDecimal(totals.grossTotal, 1, 2)} + ' EUR'"></strong></td>
+    </tr>
+</table>
+
+<p class="muted">Erstellt am <span th:text="${#temporals.format(today, 'dd.MM.yyyy')}"></span>.</p>
+</body>
+</html>
