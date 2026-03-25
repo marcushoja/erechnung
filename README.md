@@ -4,6 +4,10 @@ Pragmatische Web-App zum schnellen Erstellen von EN-16931-konformen E-Rechnungen
 
 Der Fokus liegt auf **Zeitersparnis im Alltag**: bestehende Rechnungen importieren, als Vorlage wiederverwenden und neue Rechnungen ohne erneute Dateneingabe erzeugen.
 
+## Live-Demo
+
+`https://rechnung.dokubasis.de`
+
 ## Warum dieses Projekt?
 
 Wenn du regelmaessig aehnliche Rechnungen schreibst, willst du nicht jedes Mal Absender, Empfaenger und Positionen neu tippen. Dieses Tool hilft dir dabei:
@@ -105,4 +109,9 @@ docker run --rm -p 8080:8080 \
 
 ## Lizenz
 
-Derzeit keine Lizenzdatei hinterlegt. Wenn du das Projekt oeffentlich weitergeben willst, fuege eine passende Open-Source-Lizenz hinzu (z. B. MIT oder Apache-2.0).
+Vorgesehen ist eine **AGPL-3.0-or-later** Lizenz.
+
+Das bedeutet vereinfacht:
+
+- Forken und Weiterentwickeln ist erlaubt
+- Bei Veroeffentlichung oder Bereitstellung veraenderter Versionen muss der Quelltext ebenfalls verfuegbar gemacht werden
